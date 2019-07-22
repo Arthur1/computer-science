@@ -1,0 +1,108 @@
+\documentclass{jsarticle}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{listings,jlisting}
+
+\title{コンピュータサイエンス第一\\課題1「四則演算でアニメーション」}
+
+\author{学籍番号******** ****}
+\date{}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+
+課題として、CUI上で表現される四則演算を利用したアニメーションの作成に取り組んだ。Rubyという言語を用いて作成し、プログラムはanime.rbというファイルに保存した。
+
+\end{abstract}
+
+\section{実行方法とアニメーションの説明}
+
+\subsection{実行方法}
+
+ターミナルを開き、anime.rbが存在するディレクトリ内で、以下のコマンドを実行することにより、本プログラムを実行できる。
+
+\begin{lstlisting}[language=sh]
+ruby anime.rb
+\end{lstlisting}
+
+\subsection{アニメーションの説明}
+
+道路上を車が奥に進んでいくというアニメーションを作成した。実際には、車を固定することで、相対的に道路が手前に動くように描いている。コマは全部で100コマで、0.3秒ごとに新しいコマが表示される。
+
+\section{計算の仕組み}
+
+表示する内容は行ごとに25桁の整数で表される。各桁は0または1である。
+
+道路の描画には剰余を利用し、5行ごとに3行分の縦線と2行分の空白が描画されるようにした。行に番号を振り、その数字を5で割った時の余りが1以下か2以上かを評価することでこの分岐を実装している。
+
+道路のレイヤーと車のレイヤーを合成するために、和を用いている。どちらのレイヤーでも1になるところは無いため、素直に2つのレイヤーの数を足すことで、合成した行のデータができる。
+
+\section{工夫した点}
+
+制御文字を出力することによって、毎コマごとターミナルの表示をリセットし、画面の遷移がわかりやすくなるようにした。プログラムの見通しがつきやすいよう、役割ごと関数に分け、適切なコメントを付与した。配列とfor文を利用することで、繰り返し行う処理を短く記述した。
+
+\section{ソースコード}
+
+以下にanime.rbのソースコードを示す。
+
+\begin{lstlisting}[language=ruby]
+# anime.rb
+# Author: Kazuki Asakura
+
+# 予約用の行
+$reserveLines = []
+# 表示用の行
+$displayLines = Array.new(10)
+# 車表示用のレイヤーデータ
+$carLines = [
+  0,
+  0,
+  0,
+  0,
+  0,
+  1000000000000000000,
+  111110000000000000000,
+  100010000000000000000,
+  100010000000000000000,
+  0
+]
+
+# 表示する行を追加
+def addDisplayLine(newLine)
+  $displayLines.pop              # 最後の要素を削除
+  $displayLines.unshift(newLine) # 新しい要素を先頭に追加
+end
+
+# displayLinesの内容を表示
+def printLines
+  puts "\e[H\e[2J" # clear
+  for i in 0..9
+    puts $displayLines[i] + $carLines[i] # 道路レイヤーに車を合成
+  end
+  sleep(0.3)
+end
+
+# 道路を作成、予約
+def createRoad(length)
+  for i in 0..length
+    if i % 5 <= 1
+      $reserveLines.unshift(1000000000000000000000001)
+    else
+      $reserveLines.unshift(1000000000001000000000001)
+    end
+  end
+end
+
+# init
+createRoad(100)
+for i in 0..9
+  $displayLines.unshift($reserveLines.pop)
+end
+# reserveLinesが空になるまでコマ送り
+while ! $reserveLines.empty? do
+  addDisplayLine($reserveLines.pop)
+  printLines()
+end
+\end{lstlisting}
+
+\end{document}
